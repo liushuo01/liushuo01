@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏预约</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        select, input[type="datetime-local"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        .success {
+            color: green;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #d4edda;
+            border-radius: 4px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .welcome {
+            color: #333;
+            font-weight: bold;
+        }
+        .logout-btn {
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div id="welcome-message" class="welcome"></div>
+            <div style="display: flex; gap: 10px;">
+                <a href="appointments.html" class="logout-btn" style="background-color: #2196F3;">查看预约记录</a>
+                <a href="index.html" class="logout-btn">退出登录</a>
+            </div>
+        </div>
+        
+        <h2>游戏预约</h2>
+        
+        <div id="success-message" class="success" style="display: none;"></div>
+        
+        <form id="appointment-form">
+            <div class="form-group">
+                <label for="game">游戏选择:</label>
+                <select id="game" name="game" required>
+                    <option value="">请选择游戏</option>
+                    <option value="暗区突围">暗区突围</option>
+                    <option value="王者荣耀">王者荣耀</option>
+                    <option value="永劫无间">永劫无间</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="appointment_time">预约时间:</label>
+                <input type="datetime-local" id="appointment_time" name="appointment_time" required>
+            </div>
+            
+            <button type="submit" id="submit-btn" disabled>提交预约</button>
+        </form>
+    </div>
+    
+    <script>
+        // 页面加载时检查用户是否登录
+        window.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                // 用户未登录，跳转到登录页面
+                window.location.href = 'index.html';
+            } else {
+                // 用户已登录，显示欢迎信息
+                document.getElementById('welcome-message').textContent = '欢迎，' + currentUser.username;
+            }
+            
+            // 设置最小时间为当前时间
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getMinutes() % 10); // 四舍五入到最近的10分钟
+            const minTime = now.toISOString().slice(0, 16); // 格式化为YYYY-MM-DDTHH:MM
+            document.getElementById('appointment_time').min = minTime;
+        });
+        
+        // 从localStorage获取预约数据
+        function getAppointments() {
+            return JSON.parse(localStorage.getItem('appointments')) || [];
+        }
+        
+        // 保存预约数据到localStorage
+        function saveAppointments(appointments) {
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+        }
+        
+        // 获取表单元素
+        const gameSelect = document.getElementById('game');
+        const timeInput = document.getElementById('appointment_time');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        // 监听输入变化，检查是否可以启用提交按钮
+        function checkForm() {
+            if (gameSelect.value && timeInput.value) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // 添加事件监听器
+        gameSelect.addEventListener('change', checkForm);
+        timeInput.addEventListener('change', checkForm);
+        
+        // 预约表单提交事件
+        document.getElementById('appointment-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            const game = gameSelect.value;
+            const appointmentTime = timeInput.value;
+            const submitTime = new Date().toISOString().slice(0, 19).replace('T', ' '); // 格式化为YYYY-MM-DD HH:mm:ss
+            
+            // 创建预约记录
+            const appointment = {
+                id: Date.now(), // 使用时间戳作为唯一ID
+                user_id: currentUser.id,
+                username: currentUser.username,
+                game: game,
+                appointment_time: appointmentTime.replace('T', ' '), // 转换为YYYY-MM-DD HH:mm
+                submit_time: submitTime
+            };
+            
+            // 保存预约记录
+            const appointments = getAppointments();
+            appointments.push(appointment);
+            saveAppointments(appointments);
+            
+            // 显示成功信息
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = '预约成功！';
+            successMessage.style.display = 'block';
+            
+            // 清空表单
+            gameSelect.value = '';
+            timeInput.value = '';
+            submitBtn.disabled = true;
+            
+            // 3秒后隐藏成功信息
+            setTimeout(function() {
+                successMessage.style.display = 'none';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

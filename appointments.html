@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约记录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .welcome {
+            color: #333;
+            font-weight: bold;
+        }
+        .nav-links a {
+            color: #4CAF50;
+            text-decoration: none;
+            margin-left: 15px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .nav-links a:hover {
+            background-color: #f0f0f0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .filter-group {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+        .filter-group label {
+            margin-right: 5px;
+            color: #555;
+        }
+        .filter-group select, .filter-group input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div id="welcome-message" class="welcome"></div>
+            <div class="nav-links">
+                <a href="appointment.html">创建预约</a>
+                <a href="index.html">退出登录</a>
+            </div>
+        </div>
+        
+        <h2>所有用户预约记录</h2>
+        
+        <div class="filter-section">
+            <div class="filter-group">
+                <label for="game-filter">游戏筛选:</label>
+                <select id="game-filter">
+                    <option value="">全部</option>
+                    <option value="暗区突围">暗区突围</option>
+                    <option value="王者荣耀">王者荣耀</option>
+                    <option value="永劫无间">永劫无间</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="user-filter">用户筛选:</label>
+                <select id="user-filter">
+                    <option value="">全部</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <button id="clear-filter">清除筛选</button>
+            </div>
+        </div>
+        
+        <table id="appointments-table">
+            <thead>
+                <tr>
+                    <th>用户名</th>
+                    <th>游戏</th>
+                    <th>预约时间</th>
+                    <th>提交时间</th>
+                </tr>
+            </thead>
+            <tbody id="appointments-tbody">
+                <!-- 预约记录将通过JavaScript动态生成 -->
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        // 页面加载时检查用户是否登录
+        window.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                // 用户未登录，跳转到登录页面
+                window.location.href = 'index.html';
+            } else {
+                // 用户已登录，显示欢迎信息
+                document.getElementById('welcome-message').textContent = '欢迎，' + currentUser.username;
+                // 加载预约记录
+                loadAppointments();
+            }
+        });
+        
+        // 从localStorage获取预约数据
+        function getAppointments() {
+            return JSON.parse(localStorage.getItem('appointments')) || [];
+        }
+        
+        // 加载所有预约记录
+        function loadAppointments(filterGame = '', filterUser = '') {
+            const appointments = getAppointments();
+            const tbody = document.getElementById('appointments-tbody');
+            
+            // 清空表格
+            tbody.innerHTML = '';
+            
+            // 筛选预约记录
+            let filteredAppointments = appointments;
+            if (filterGame) {
+                filteredAppointments = filteredAppointments.filter(a => a.game === filterGame);
+            }
+            if (filterUser) {
+                filteredAppointments = filteredAppointments.filter(a => a.username === filterUser);
+            }
+            
+            // 按提交时间降序排序
+            filteredAppointments.sort((a, b) => new Date(b.submit_time) - new Date(a.submit_time));
+            
+            // 更新用户筛选下拉框
+            updateUserFilter(appointments);
+            
+            if (filteredAppointments.length === 0) {
+                // 没有预约记录
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">暂无预约记录</td></tr>';
+            } else {
+                // 生成表格行
+                filteredAppointments.forEach(appointment => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${appointment.username}</td>
+                        <td>${appointment.game}</td>
+                        <td>${appointment.appointment_time}</td>
+                        <td>${appointment.submit_time}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+        
+        // 更新用户筛选下拉框
+        function updateUserFilter(appointments) {
+            const userFilter = document.getElementById('user-filter');
+            const users = [...new Set(appointments.map(a => a.username))];
+            
+            // 保存当前选中值
+            const currentValue = userFilter.value;
+            
+            // 清空除了默认选项之外的所有选项
+            while (userFilter.options.length > 1) {
+                userFilter.remove(1);
+            }
+            
+            // 添加用户选项
+            users.forEach(username => {
+                const option = document.createElement('option');
+                option.value = username;
+                option.textContent = username;
+                userFilter.appendChild(option);
+            });
+            
+            // 恢复选中值
+            userFilter.value = currentValue;
+        }
+        
+        // 筛选事件监听
+        document.getElementById('game-filter').addEventListener('change', function() {
+            const gameFilter = this.value;
+            const userFilter = document.getElementById('user-filter').value;
+            loadAppointments(gameFilter, userFilter);
+        });
+        
+        document.getElementById('user-filter').addEventListener('change', function() {
+            const gameFilter = document.getElementById('game-filter').value;
+            const userFilter = this.value;
+            loadAppointments(gameFilter, userFilter);
+        });
+        
+        document.getElementById('clear-filter').addEventListener('click', function() {
+            document.getElementById('game-filter').value = '';
+            document.getElementById('user-filter').value = '';
+            loadAppointments();
+        });
+    </script>
+</body>
+</html>

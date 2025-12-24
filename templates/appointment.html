@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏预约</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        select, input[type="datetime-local"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        .success {
+            color: green;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #d4edda;
+            border-radius: 4px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .welcome {
+            color: #333;
+            font-weight: bold;
+        }
+        .logout-btn {
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="welcome">欢迎，{{ session['username'] }}</div>
+            <a href="{{ url_for('logout') }}" class="logout-btn">退出登录</a>
+        </div>
+        
+        <h2>游戏预约</h2>
+        
+        {% if success %}
+            <div class="success">{{ success }}</div>
+        {% endif %}
+        
+        <form method="POST" id="appointment-form">
+            <div class="form-group">
+                <label for="game">游戏选择:</label>
+                <select id="game" name="game" required>
+                    <option value="">请选择游戏</option>
+                    <option value="暗区突围">暗区突围</option>
+                    <option value="王者荣耀">王者荣耀</option>
+                    <option value="永劫无间">永劫无间</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="appointment_time">预约时间:</label>
+                <input type="datetime-local" id="appointment_time" name="appointment_time" required>
+            </div>
+            
+            <button type="submit" id="submit-btn" disabled>提交预约</button>
+        </form>
+    </div>
+    
+    <script>
+        // 获取表单元素
+        const gameSelect = document.getElementById('game');
+        const timeInput = document.getElementById('appointment_time');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        // 监听输入变化，检查是否可以启用提交按钮
+        function checkForm() {
+            if (gameSelect.value && timeInput.value) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // 添加事件监听器
+        gameSelect.addEventListener('change', checkForm);
+        timeInput.addEventListener('change', checkForm);
+        
+        // 设置最小时间为当前时间
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getMinutes() % 10); // 四舍五入到最近的10分钟
+        const minTime = now.toISOString().slice(0, 16); // 格式化为YYYY-MM-DDTHH:MM
+        timeInput.min = minTime;
+    </script>
+</body>
+</html>
